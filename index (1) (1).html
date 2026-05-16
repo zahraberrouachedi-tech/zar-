@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scan & Go</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--black:#0a0a0a;--dark:#111111;--card:#1a1a1a;--card2:#222222;--gold:#f5c518;--gold2:#e6a800;--green:#2ecc40;--red:#e74c3c;--blue:#2196f3;--text:#f0f0f0;--muted:#888;}
+body{font-family:'Cairo',sans-serif;background:var(--black);color:var(--text);min-height:100vh;overflow-x:hidden;}
+/* TOPBAR */
+.topbar{background:var(--dark);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:100;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-icon{width:40px;height:40px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.brand-text h2{font-size:16px;font-weight:900;color:var(--gold);}
+.brand-text p{font-size:10px;color:var(--muted);}
+.timer{font-size:26px;font-weight:900;color:var(--gold);letter-spacing:4px;}
+.topbar-btns{display:flex;gap:8px;align-items:center;}
+.btn-admin{background:transparent;border:1.5px solid var(--gold);color:var(--gold);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;transition:all .2s;}
+.btn-admin:hover{background:var(--gold);color:var(--black);}
+.btn-lang{background:var(--card2);border:1.5px solid #333;color:var(--text);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;}
+.btn-voice{background:transparent;border:1.5px solid #9b59b6;color:#9b59b6;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:16px;transition:all .2s;display:flex;align-items:center;gap:4px;}
+.btn-voice:hover,.btn-voice.active{background:#9b59b6;color:white;}
+.btn-voice.listening{background:#e74c3c;color:white;border-color:#e74c3c;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.lang-dropdown{position:relative;display:inline-block;}
+.lang-menu{display:none;position:absolute;top:42px;right:0;background:#1a1a1a;border:1.5px solid #444;border-radius:10px;overflow:hidden;z-index:999;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.7);}
+.lang-menu div{padding:11px 16px;cursor:pointer;font-size:13px;color:#f0f0f0;transition:background .15s;}
+.lang-menu div:hover{background:#2a2a2a;}
+/* MARQUEE */
+.marquee-wrap{overflow:hidden;white-space:nowrap;padding:8px 0;}
+.marquee-wrap.red{background:linear-gradient(90deg,#c0392b,#e74c3c,#c0392b);}
+.marquee-wrap.green{background:linear-gradient(90deg,#1a4a1a,#1e6b1e,#1a4a1a);border-bottom:1px solid #2ecc4033;}
+.marquee-inner{display:inline-block;font-size:13px;font-weight:700;color:white;animation:marquee-scroll 22s linear infinite;}
+.marquee-inner.green-text{color:#aaffaa;}
+.marquee-inner.green-text .gv{color:var(--gold);}
+@keyframes marquee-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* LAYOUT */
+.main-layout{display:flex;min-height:calc(100vh - 130px);}
+/* SIDEBAR */
+.sidebar{width:300px;min-width:300px;background:var(--dark);border-left:1px solid #2a2a2a;padding:16px;display:flex;flex-direction:column;}
+.sidebar-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.sidebar-title h3{font-size:17px;font-weight:900;color:var(--gold);}
+.cart-count{background:var(--gold);color:var(--black);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;}
+.cart-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:8px;min-height:120px;}
+.cart-empty .icon{font-size:52px;opacity:.3;}
+.cart-items{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:300px;}
+.cart-item{background:var(--card);border-radius:10px;padding:10px 12px;border:1px solid #2a2a2a;display:flex;align-items:center;gap:8px;}
+.cart-item .item-name{font-size:13px;font-weight:700;flex:1;}
+.cart-item .item-price{color:var(--gold);font-size:13px;font-weight:700;}
+.cart-item .item-qty{background:#2a2a2a;border-radius:20px;padding:2px 10px;font-size:12px;color:var(--muted);}
+.remove-btn{background:#e74c3c22;border:none;color:#e74c3c;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:14px;}
+.totals{border-top:1px solid #2a2a2a;padding-top:12px;margin-top:4px;}
+.total-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--muted);}
+.total-row .val{color:var(--text);}
+.discount-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.discount-row .val{color:var(--green);}
+.grand-row{display:flex;justify-content:space-between;font-size:18px;font-weight:900;margin-top:8px;}
+.grand-row .val{color:var(--gold);}
+.pay-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;}
+.pay-btn{padding:12px 6px;border:none;border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s;}
+.pay-btn:hover{transform:translateY(-2px);}
+.pay-btn.blue{background:#1565c0;color:white;}
+.pay-btn.gold{background:var(--gold);color:var(--black);}
+.pay-btn.green{background:#2e7d32;color:white;}
+/* CONTENT */
+.content{flex:1;padding:20px;display:flex;flex-direction:column;gap:16px;}
+.total-card{background:linear-gradient(135deg,#1a1a1a,#0d0d0d);border:2px solid var(--gold);border-radius:16px;padding:28px;text-align:center;}
+.total-card .lbl{font-size:15px;color:var(--muted);margin-bottom:8px;}
+.total-card .amount{font-size:52px;font-weight:900;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:12px;}
+.total-card .currency{font-size:24px;color:var(--muted);}
+.progress-bar{background:#222;border-radius:20px;height:6px;margin-top:16px;overflow:hidden;}
+.progress-fill{background:linear-gradient(90deg,var(--green),var(--gold));height:100%;width:0%;transition:width .5s;border-radius:20px;}
+.scan-section{background:var(--card);border-radius:14px;padding:20px;border:1px solid #2a2a2a;}
+.section-header{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;}
+.section-header h3{font-size:16px;font-weight:900;color:var(--gold);}
+.scan-methods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.scan-card{border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;border:2px solid transparent;}
+.scan-card:hover{transform:translateY(-3px);}
+.scan-card.purple-card{background:linear-gradient(135deg,#7b2fbe,#9b59b6);}
+.scan-card.blue-card{background:linear-gradient(135deg,#1565c0,#2196f3);}
+.scan-card.manual-card{background:var(--card2);border:1.5px solid #333;display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px;}
+.scan-label{font-size:11px;color:rgba(255,255,255,.7);margin-bottom:4px;}
+.scan-btn-text{font-size:15px;font-weight:900;color:white;}
+.scan-icon{font-size:22px;margin-bottom:6px;}
+.barcode-input{background:#111;border:1.5px solid #333;color:var(--text);padding:10px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;width:100%;outline:none;text-align:right;transition:border-color .2s;}
+.barcode-input:focus{border-color:var(--gold);}
+.add-btn{background:var(--gold);color:var(--black);border:none;padding:10px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;width:100%;}
+.add-btn:hover{background:var(--gold2);}
+/* ADMIN */
+.admin-panel{display:none;}
+.admin-header-bar{background:var(--dark);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border:1px solid #2a2a2a;margin-bottom:16px;}
+.admin-header-bar h2{font-size:18px;font-weight:900;color:var(--gold);}
+.back-btn{background:var(--gold);color:var(--black);border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;}
+.admin-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.tab-btn{padding:9px 18px;border-radius:8px;border:1.5px solid #333;background:transparent;color:var(--muted);cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;transition:all .2s;}
+.tab-btn.active{background:var(--gold);color:var(--black);border-color:var(--gold);}
+.tab-btn:hover:not(.active){border-color:var(--gold);color:var(--gold);}
+.add-prod-section{background:var(--card);border-radius:12px;padding:18px;border:1px solid #2a2a2a;margin-bottom:16px;}
+.add-prod-section h4{font-size:15px;font-weight:900;color:var(--gold);margin-bottom:14px;text-align:right;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;text-align:right;}
+.form-field input,.form-field select{width:100%;background:#111;border:1.5px solid #333;color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;text-align:right;transition:border-color .2s;}
+.form-field input:focus,.form-field select:focus{border-color:var(--gold);}
+.form-field.full{grid-column:1/-1;}
+.add-prod-btn{background:var(--gold);color:var(--black);border:none;padding:11px 24px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;margin-top:12px;}
+.add-prod-btn:hover{background:var(--gold2);}
+.section-label{font-size:12px;font-weight:700;color:var(--gold);text-align:right;margin-bottom:6px;padding:6px 0;border-bottom:1px solid #2a2a2a;}
+.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
+.prod-card{background:var(--card);border-radius:12px;padding:14px;border:1px solid #2a2a2a;}
+.prod-card .prod-name{font-size:14px;font-weight:900;text-align:right;margin-bottom:2px;}
+.prod-card .prod-name-sub{font-size:11px;color:var(--muted);text-align:right;margin-bottom:6px;font-style:italic;}
+.prod-card .prod-code{font-size:11px;color:var(--muted);text-align:right;margin-bottom:8px;}
+.prod-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;}
+.prod-row .k{color:var(--muted);}
+.prod-row .v{font-weight:700;}
+.prod-row .v.gold{color:var(--gold);}
+.prod-row .v.green{color:var(--green);}
+.prod-actions{display:flex;gap:6px;margin-top:10px;}
+.prod-del{background:#e74c3c22;border:1px solid #e74c3c44;color:#e74c3c;border-radius:7px;padding:6px 10px;cursor:pointer;font-size:14px;flex:1;}
+.prod-edit{background:#f5c51822;border:1px solid #f5c51844;color:var(--gold);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:14px;flex:1;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.stat-card{background:var(--card);border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2a2a;}
+.stat-num{font-size:28px;font-weight:900;color:var(--gold);}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:4px;}
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;display:none;align-items:center;justify-content:center;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--dark);border:2px solid var(--gold);border-radius:16px;padding:28px;width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;}
+.modal-box h3{font-size:18px;font-weight:900;color:var(--gold);text-align:right;margin-bottom:18px;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;text-align:right;}
+.modal-field input,.modal-field select{width:100%;background:#111;border:1.5px solid #333;color:var(--text);padding:10px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:14px;outline:none;text-align:right;}
+.modal-field input:focus,.modal-field select:focus{border-color:var(--gold);}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-divider{border:none;border-top:1px solid #2a2a2a;margin:14px 0;}
+.modal-sec-title{font-size:12px;font-weight:700;color:var(--gold);text-align:right;margin-bottom:10px;}
+.modal-btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+.modal-cancel{background:transparent;border:1.5px solid #333;color:var(--muted);padding:9px 18px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;}
+.modal-confirm{background:var(--gold);color:var(--black);border:none;padding:9px 24px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-weight:900;}
+/* INVOICE */
+.invoice-box{background:#fff;color:#111;border-radius:12px;padding:24px;font-family:'Cairo',sans-serif;max-width:400px;width:100%;}
+.invoice-header{text-align:center;border-bottom:2px dashed #ddd;padding-bottom:14px;margin-bottom:14px;}
+.invoice-header h2{font-size:20px;font-weight:900;color:#111;}
+.invoice-header p{font-size:12px;color:#777;margin-top:4px;}
+.invoice-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f0f0f0;}
+.invoice-row .name{flex:1;font-weight:600;}
+.invoice-row .qty{width:40px;text-align:center;color:#555;}
+.invoice-row .price{width:80px;text-align:left;font-weight:700;color:#111;}
+.invoice-total-section{margin-top:12px;border-top:2px solid #ddd;padding-top:12px;}
+.invoice-total-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.invoice-total-row.grand{font-size:17px;font-weight:900;color:#111;margin-top:6px;}
+.invoice-total-row.discount{color:#2e7d32;}
+.invoice-footer{text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ddd;font-size:12px;color:#888;}
+.invoice-print-btn{background:#111;color:white;border:none;padding:10px 24px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:12px;}
+/* CASH MODAL */
+.cash-display{background:#0d0d0d;border-radius:12px;padding:20px;text-align:center;margin-bottom:16px;}
+.cash-display .cash-lbl{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.cash-display .cash-amount{font-size:40px;font-weight:900;color:var(--gold);}
+.cash-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.cash-key{background:var(--card2);border:1px solid #333;color:var(--text);border-radius:10px;padding:14px;font-size:18px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s;}
+.cash-key:hover{background:#333;border-color:var(--gold);}
+.cash-key.del{color:#e74c3c;}
+.cash-key.zero{grid-column:span 2;}
+.cash-change{background:#1a3a1a;border-radius:10px;padding:14px;text-align:center;margin-top:8px;}
+.cash-change .ch-lbl{font-size:12px;color:#aaffaa;}
+.cash-change .ch-amount{font-size:28px;font-weight:900;color:var(--green);}
+.cash-change.negative{background:#3a1a1a;}
+.cash-change.negative .ch-amount{color:#e74c3c;}
+/* VOICE STATUS */
+.voice-status{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#9b59b6;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:600;display:none;box-shadow:0 4px 20px rgba(155,89,182,.5);}
+.voice-status.show{display:block;}
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:#2e7d32;color:white;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;z-index:1000;transition:transform .3s;font-family:'Cairo',sans-serif;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+@media(max-width:768px){.main-layout{flex-direction:column-reverse;}.sidebar{width:100%;min-width:unset;}.scan-methods,.prod-grid{grid-template-columns:1fr 1fr;}.form-grid,.modal-grid{grid-template-columns:1fr;}}
+@media print{body *{visibility:hidden;}.invoice-box,.invoice-box *{visibility:visible;}.invoice-box{position:fixed;top:0;left:0;width:100%;}}
+</style>
+</head>
+<body>
+
+<!-- INVOICE VIEWER (activated by QR scan) -->
+<div id="inv-viewer" style="display:none;position:fixed;inset:0;background:#f5f5f5;z-index:9999;overflow-y:auto;padding:20px;font-family:Cairo,sans-serif;">
+  <div id="inv-viewer-content" style="max-width:420px;margin:0 auto;background:#fff;border-radius:14px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,.12);"></div>
+</div>
+
+<script>
+// ─── Show invoice if opened via QR scan ───
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var enc=params.get('inv');
+  // Also support hash-based encoding (fallback)
+  if(!enc && window.location.hash){
+    enc=window.location.hash.slice(1);
+  }
+  if(!enc) return;
+  try{
+    var d=JSON.parse(decodeURIComponent(escape(atob(enc))));
+    var isRtl=d.lg==='ar';
+    var dir=isRtl?'rtl':'ltr';
+    var cur=d.lg==='ar'?'دج':'DZD';
+    var labels={
+      ar:{title:'وصل بيع',ref:'رقم الوصل',pay:'طريقة الدفع',prod:'المنتج',qty:'الكمية',total:'الإجمالي',sub:'المجموع الفرعي',disc:'الخصم',grand:'المبلغ الإجمالي',paid:'المبلغ المُسلَّم',change:'الباقي',thanks:'🙏 شكراً لزيارتكم'},
+      fr:{title:'Bon de caisse',ref:'Réf',pay:'Paiement',prod:'Article',qty:'Qté',total:'Total',sub:'Sous-total',disc:'Remise',grand:'Total TTC',paid:'Reçu',change:'Monnaie rendue',thanks:'🙏 Merci pour votre visite'},
+      en:{title:'Receipt',ref:'Ref',pay:'Payment',prod:'Product',qty:'Qty',total:'Total',sub:'Subtotal',disc:'Discount',grand:'Grand Total',paid:'Received',change:'Change',thanks:'🙏 Thank you for visiting us'}
+    };
+    var L=labels[d.lg]||labels.ar;
+    var align=isRtl?'right':'left';
+    var rows=d.it.map(function(i){
+      return '<tr><td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">'+i.nm+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center;color:#555;">'+i.q+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid #eee;text-align:right;font-weight:700;">'+(+i.tot).toFixed(2)+' '+cur+'</td></tr>';
+    }).join('');
+    var discRow=d.dc>0?'<tr><td colspan="2" style="padding:5px 8px;color:#2e7d32;">'+L.disc+'</td><td style="padding:5px 8px;text-align:right;color:#2e7d32;">-'+(+d.dc).toFixed(2)+' '+cur+'</td></tr>':'';
+    var changeRow=d.ch>0?'<tr><td colspan="2" style="padding:5px 8px;color:#555;">'+L.paid+'</td><td style="padding:5px 8px;text-align:right;">'+(+d.pd).toFixed(2)+' '+cur+'</td></tr>'+
+      '<tr style="background:#e8f5e9;"><td colspan="2" style="padding:8px;font-weight:900;color:#1b5e20;">'+L.change+'</td><td style="padding:8px;text-align:right;font-weight:900;color:#1b5e20;font-size:16px;">'+(+d.ch).toFixed(2)+' '+cur+'</td></tr>':'';
+    document.getElementById('inv-viewer-content').innerHTML=
+      '<div dir="'+dir+'" style="text-align:center;border-bottom:2px dashed #ddd;padding-bottom:16px;margin-bottom:16px;">'+
+        '<div style="font-size:24px;font-weight:900;">Scan &amp; Go 🛒</div>'+
+        '<div style="font-size:13px;color:#777;margin-top:4px;">'+L.title+'</div>'+
+      '</div>'+
+      '<div dir="'+dir+'" style="font-size:12px;color:#555;margin-bottom:14px;">'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>📅 '+d.d+'</span><span>🕐 '+d.t+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;"><span>'+L.ref+': <b>'+d.n+'</b></span><span>'+L.pay+': <b>'+d.m+'</b></span></div>'+
+      '</div>'+
+      '<table dir="'+dir+'" style="width:100%;border-collapse:collapse;margin-bottom:14px;">'+
+        '<thead><tr style="background:#f5f5f5;border-bottom:2px solid #ddd;">'+
+          '<th style="padding:8px;text-align:'+align+';font-size:12px;">'+L.prod+'</th>'+
+          '<th style="padding:8px;text-align:center;font-size:12px;">'+L.qty+'</th>'+
+          '<th style="padding:8px;text-align:right;font-size:12px;">'+L.total+'</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody>'+
+      '</table>'+
+      '<table dir="'+dir+'" style="width:100%;border-collapse:collapse;">'+
+        '<tr><td colspan="2" style="padding:5px 8px;color:#777;">'+L.sub+'</td><td style="padding:5px 8px;text-align:right;">'+(+d.s).toFixed(2)+' '+cur+'</td></tr>'+
+        discRow+
+        '<tr style="border-top:2px solid #111;"><td colspan="2" style="padding:10px 8px;font-weight:900;font-size:17px;">'+L.grand+'</td><td style="padding:10px 8px;text-align:right;font-weight:900;font-size:17px;color:#c8960c;">'+(+d.g).toFixed(2)+' '+cur+'</td></tr>'+
+        changeRow+
+      '</table>'+
+      '<div dir="'+dir+'" style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ddd;font-size:13px;color:#888;">'+L.thanks+'</div>'+
+      '<div style="margin-top:16px;text-align:center;"><button onclick="window.print()" style="background:#111;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">🖨️ طباعة</button></div>';
+    document.getElementById('inv-viewer').style.display='block';
+    document.body.style.overflow='hidden';
+  }catch(e){ console.error('Invoice decode error',e); }
+})();
+</script>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-btns">
+    <div class="lang-dropdown">
+      <button class="btn-lang" onclick="toggleLang()">🌐 <span id="lang-label">العربية</span> ▾</button>
+      <div class="lang-menu" id="lang-menu">
+        <div onclick="setLang('ar')">🇩🇿 العربية</div>
+        <div onclick="setLang('fr')">🇫🇷 Français</div>
+        <div onclick="setLang('en')">🇬🇧 English</div>
+      </div>
+    </div>
+    <button class="btn-voice" id="voice-btn" onclick="toggleVoice()" title="المساعد الصوتي">🎤</button>
+    <button class="btn-admin" onclick="toggleAdmin()" id="btn-admin-text">⚙️ الإدارة</button>
+  </div>
+  <div class="timer" id="clock">00:00:00</div>
+  <div class="brand">
+    <div class="brand-text" style="text-align:right;">
+      <h2>Scan &amp; Go</h2>
+      <p id="brand-sub">تسوق ذكي</p>
+    </div>
+    <div class="brand-icon">🛒</div>
+  </div>
+</div>
+
+<div class="marquee-wrap red"><span class="marquee-inner" id="red-marquee"></span></div>
+<div class="marquee-wrap green"><span class="marquee-inner green-text" id="green-marquee"></span></div>
+
+<div class="main-layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-title">
+      <div class="cart-count" id="cart-count">0</div>
+      <h3 id="txt-cart-title">🛒 السلة الذكية</h3>
+    </div>
+    <div class="cart-empty" id="cart-empty">
+      <div class="icon">🛒</div>
+      <div id="txt-empty">السلة فارغة</div>
+      <div id="txt-empty-hint" style="font-size:12px">أضف منتجات للبدء</div>
+    </div>
+    <div class="cart-items" id="cart-items" style="display:none;"></div>
+    <div class="totals">
+      <div class="total-row"><span id="txt-subtotal-lbl">المجموع الفرعي:</span><span class="val" id="subtotal">0 دج</span></div>
+      <div class="discount-row"><span id="txt-discounts-lbl" style="color:#aaffaa;">الخصومات:</span><span class="val" id="discounts">0- دج</span></div>
+      <div class="grand-row"><span id="txt-total-lbl">الإجمالي:</span><span class="val" id="grand-total">0 دج</span></div>
+    </div>
+    <div class="pay-btns">
+      <button class="pay-btn blue" onclick="checkout('bank')">🏦<span id="txt-pay1">بنكي</span></button>
+      <button class="pay-btn gold" onclick="checkout('card')">💳<span id="txt-pay2">البطاقة</span></button>
+      <button class="pay-btn green" onclick="checkout('cash')">💵<span id="txt-pay3">نقداً</span></button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div id="customer-view">
+      <div class="total-card">
+        <div class="lbl" id="txt-big-lbl">المجموع الإجمالي</div>
+        <div class="amount"><span id="big-total">0</span><span class="currency">دج</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+      </div>
+      <div class="scan-section">
+        <div class="section-header"><h3 id="txt-add-prod">إضافة منتج +</h3></div>
+        <div class="scan-methods">
+          <div class="scan-card purple-card" onclick="simulateScan()">
+            <div class="scan-icon">⬛</div>
+            <div class="scan-label" id="txt-scan-lbl1">مسح QR Code</div>
+            <div class="scan-btn-text" id="txt-scan-btn1">مسح QR</div>
+          </div>
+          <div class="scan-card blue-card" onclick="simulateScan()">
+            <div class="scan-icon">📷</div>
+            <div class="scan-label" id="txt-scan-lbl2">مسح Barcode</div>
+            <div class="scan-btn-text" id="txt-scan-btn2">فتح الماسح</div>
+          </div>
+          <div class="scan-card manual-card">
+            <div class="scan-label" id="txt-scan-lbl3" style="color:var(--muted);text-align:right;">إدخال يدوي (باركود)</div>
+            <input class="barcode-input" id="barcode-input" placeholder="أدخل الباركود" onkeydown="if(event.key==='Enter')addByCode()">
+            <button class="add-btn" id="txt-add-btn" onclick="addByCode()">إضافة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="admin-panel" id="admin-panel">
+      <div class="admin-header-bar">
+        <button class="back-btn" onclick="backToMain()" id="txt-back-btn">العودة للواجهة الرئيسية</button>
+        <h2 id="txt-admin-title">⚙️ لوحة الإدارة</h2>
+      </div>
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="showTab('products',this)" id="tab-products-btn">🏷️ المنتجات</button>
+        <button class="tab-btn" onclick="showTab('stats',this)" id="tab-stats-btn">📊 الإحصائيات</button>
+        <button class="tab-btn" onclick="showTab('stock',this)" id="tab-stock-btn">📦 المخزون</button>
+        <button class="tab-btn" onclick="showTab('settings',this)" id="tab-settings-btn">🔧 الإعدادات</button>
+      </div>
+
+      <div id="tab-products">
+        <div class="add-prod-section">
+          <h4 id="txt-add-new">+ إضافة منتج جديد</h4>
+          <div class="form-grid">
+            <div class="form-field full"><div class="section-label" id="lbl-names-section">🌍 أسماء المنتج بعدة لغات</div></div>
+            <div class="form-field"><label id="lbl-name-ar">🇩🇿 الاسم بالعربية *</label><input id="np-name-ar" placeholder="مثال: حليب طازج"></div>
+            <div class="form-field"><label id="lbl-name-fr">🇫🇷 Nom en Français</label><input id="np-name-fr" placeholder="Ex: Lait frais"></div>
+            <div class="form-field full"><label id="lbl-name-en">🇬🇧 Name in English</label><input id="np-name-en" placeholder="Ex: Fresh milk"></div>
+            <div class="form-field full"><div class="section-label" id="lbl-details-section">📋 تفاصيل المنتج</div></div>
+            <div class="form-field"><label id="lbl-code">الباركود *</label><input id="np-code" placeholder="6001234567890"></div>
+            <div class="form-field"><label id="lbl-price">السعر (دج) *</label><input id="np-price" type="number" placeholder="150"></div>
+            <div class="form-field"><label id="lbl-qty">الكمية</label><input id="np-qty" type="number" placeholder="50"></div>
+            <div class="form-field"><label id="lbl-disc">الخصم (%)</label><input id="np-disc" type="number" placeholder="0" min="0" max="100"></div>
+            <div class="form-field full"><label id="lbl-cat">التصنيف</label>
+              <select id="np-cat">
+                <option value="0">ألبان | Laitages | Dairy</option>
+                <option value="1">مواد غذائية | Alimentation | Food</option>
+                <option value="2">مشروبات | Boissons | Beverages</option>
+                <option value="3">وجبات خفيفة | Snacks | Snacks</option>
+                <option value="4">عناية شخصية | Hygiène | Personal care</option>
+                <option value="5">أخرى | Autres | Other</option>
+              </select>
+            </div>
+          </div>
+          <button class="add-prod-btn" onclick="addProduct()" id="txt-add-prod-btn">+ إضافة المنتج</button>
+        </div>
+        <div class="section-header"><h3 style="color:var(--gold);font-size:15px;" id="txt-manage-prods">إدارة المنتجات</h3></div>
+        <div class="prod-grid" id="admin-prod-grid"></div>
+      </div>
+
+      <div id="tab-stats" style="display:none;">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-num" id="s-transactions">0</div><div class="stat-lbl" id="txt-transactions">إجمالي المعاملات</div></div>
+          <div class="stat-card"><div class="stat-num" id="s-revenue">0</div><div class="stat-lbl" id="txt-revenue">الإيرادات (دج)</div></div>
+          <div class="stat-card"><div class="stat-num" id="s-products">0</div><div class="stat-lbl" id="txt-products-count">عدد المنتجات</div></div>
+        </div>
+        <div style="background:var(--card);border-radius:12px;padding:40px;border:1px solid #2a2a2a;text-align:center;color:var(--muted);font-size:18px;" id="txt-chart-ph">📊 الرسوم البيانية ستظهر هنا</div>
+      </div>
+
+      <div id="tab-stock" style="display:none;">
+        <div style="background:var(--card);border-radius:12px;padding:20px;border:1px solid #2a2a2a;"><div id="stock-list"></div></div>
+      </div>
+
+      <div id="tab-settings" style="display:none;">
+        <div style="background:var(--card);border-radius:12px;padding:20px;border:1px solid #2a2a2a;">
+          <h4 style="color:var(--gold);text-align:right;margin-bottom:16px;" id="txt-settings-title">إعدادات النظام</h4>
+          <div class="form-field" style="margin-bottom:12px;"><label id="lbl-store-name">اسم المتجر</label><input placeholder="Scan & Go" value="Scan & Go"></div>
+          <div class="form-field" style="margin-bottom:12px;"><label id="lbl-currency">العملة</label><input value="دج"></div>
+          <div class="form-field"><label id="lbl-admin-code">رمز الإدارة</label><input type="password" placeholder="••••••"></div>
+          <button class="add-prod-btn" style="margin-top:12px;" id="txt-save-btn">💾 حفظ الإعدادات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box" style="width:360px;">
+    <h3 id="txt-modal-title">🔐 دخول الإدارة</h3>
+    <div class="modal-field">
+      <label id="txt-modal-lbl">رمز الدخول</label>
+      <input type="password" id="admin-pass" placeholder="••••••" onkeydown="if(event.key==='Enter')checkAdmin()">
+    </div>
+    <div id="pass-err" style="color:#e74c3c;font-size:12px;text-align:right;display:none;"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('login-modal')" id="txt-cancel">إلغاء</button>
+      <button class="modal-confirm" onclick="checkAdmin()" id="txt-enter">دخول</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-box">
+    <h3 id="txt-edit-title">✏️ تعديل المنتج</h3>
+    <input type="hidden" id="edit-id">
+    <div class="modal-sec-title" id="txt-edit-names-lbl">🌍 أسماء المنتج</div>
+    <div class="modal-grid">
+      <div class="modal-field"><label id="edit-lbl-ar">🇩🇿 العربية *</label><input id="edit-name-ar"></div>
+      <div class="modal-field"><label id="edit-lbl-fr">🇫🇷 Français</label><input id="edit-name-fr"></div>
+    </div>
+    <div class="modal-field"><label id="edit-lbl-en">🇬🇧 English</label><input id="edit-name-en"></div>
+    <hr class="modal-divider">
+    <div class="modal-grid">
+      <div class="modal-field"><label id="edit-lbl-code">الباركود</label><input id="edit-code"></div>
+      <div class="modal-field"><label id="edit-lbl-price">السعر (دج)</label><input id="edit-price" type="number"></div>
+      <div class="modal-field"><label id="edit-lbl-qty">الكمية</label><input id="edit-qty" type="number"></div>
+      <div class="modal-field"><label id="edit-lbl-disc">الخصم (%)</label><input id="edit-disc" type="number" min="0" max="100"></div>
+    </div>
+    <div class="modal-field"><label id="edit-lbl-cat">التصنيف</label>
+      <select id="edit-cat">
+        <option value="0">ألبان | Laitages | Dairy</option>
+        <option value="1">مواد غذائية | Alimentation | Food</option>
+        <option value="2">مشروبات | Boissons | Beverages</option>
+        <option value="3">وجبات خفيفة | Snacks | Snacks</option>
+        <option value="4">عناية شخصية | Hygiène | Personal care</option>
+        <option value="5">أخرى | Autres | Other</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('edit-modal')" id="txt-edit-cancel">إلغاء</button>
+      <button class="modal-confirm" onclick="saveEdit()" id="txt-edit-save">💾 حفظ التعديلات</button>
+    </div>
+  </div>
+</div>
+
+<!-- CASH MODAL -->
+<div class="modal-overlay" id="cash-modal">
+  <div class="modal-box" style="width:400px;background:#0f1923;border:2px solid #2ecc40;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:40px;">💵</div>
+      <h3 id="txt-cash-title" style="color:#2ecc40;font-size:20px;margin-top:6px;">الدفع نقداً</h3>
+    </div>
+    <!-- Amount Due -->
+    <div style="background:#1a2632;border-radius:14px;padding:18px;text-align:center;margin-bottom:14px;">
+      <div style="font-size:13px;color:#aaa;margin-bottom:6px;" id="txt-total-due">المبلغ الواجب دفعه</div>
+      <div style="font-size:42px;font-weight:900;color:var(--gold);line-height:1;" id="cash-due-display">0.00</div>
+      <div style="font-size:14px;color:#aaa;margin-top:4px;">دج</div>
+    </div>
+    <!-- Amount Paid Input -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:13px;color:#ccc;margin-bottom:8px;text-align:right;" id="txt-amount-paid">المبلغ المُسلَّم من الزبون</div>
+      <div style="display:flex;align-items:center;background:#1a2632;border:2px solid #2ecc40;border-radius:12px;overflow:hidden;">
+        <div style="display:flex;flex-direction:column;">
+          <button onclick="cashStep(10)" style="background:transparent;border:none;color:#2ecc40;font-size:16px;cursor:pointer;padding:4px 10px;">▲</button>
+          <button onclick="cashStep(-10)" style="background:transparent;border:none;color:#2ecc40;font-size:16px;cursor:pointer;padding:4px 10px;">▼</button>
+        </div>
+        <input type="number" id="cash-paid-input" value="" placeholder="0" min="0" step="5"
+          style="flex:1;background:transparent;border:none;color:white;font-size:28px;font-weight:900;text-align:center;outline:none;font-family:Cairo,sans-serif;padding:14px 0;"
+          oninput="updateChange()">
+      </div>
+    </div>
+    <!-- Change -->
+    <div id="cash-change-box" style="border-radius:14px;padding:16px;text-align:center;margin-bottom:18px;background:#0d2a0d;">
+      <div style="font-size:13px;color:#aaffaa;margin-bottom:4px;" id="txt-change">الباقي للزبون</div>
+      <div style="font-size:36px;font-weight:900;color:#2ecc40;" id="cash-change-display">0.00</div>
+      <div style="font-size:13px;color:#aaa;">دج</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <button onclick="closeModal('cash-modal')" id="txt-cash-cancel"
+        style="padding:14px;background:#2a2a2a;color:#aaa;border:none;border-radius:10px;font-family:Cairo,sans-serif;font-size:15px;cursor:pointer;">إلغاء</button>
+      <button onclick="confirmCash()" id="cash-confirm-btn"
+        style="padding:14px;background:linear-gradient(135deg,#1e7d32,#2ecc40);color:white;border:none;border-radius:10px;font-family:Cairo,sans-serif;font-size:15px;font-weight:900;cursor:pointer;">✅ تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay" id="invoice-modal" style="align-items:center;">
+  <div style="background:white;border-radius:16px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.7);">
+    <div id="invoice-content" style="padding:24px 20px;font-family:Cairo,sans-serif;color:#111;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 20px;">
+      <button onclick="closeModal('invoice-modal')" id="txt-invoice-close"
+        style="padding:13px;background:#e0e0e0;color:#333;border:none;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">✔ تم</button>
+      <button onclick="window.print()" id="txt-invoice-print"
+        style="padding:13px;background:#1a56db;color:white;border:none;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">🖨️ طباعة الوصل</button>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE STATUS -->
+<div class="voice-status" id="voice-status">🎤 أنا أستمع...</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA ============
+var CATS=[
+  {ar:'ألبان',fr:'Laitages',en:'Dairy'},
+  {ar:'مواد غذائية',fr:'Alimentation',en:'Food'},
+  {ar:'مشروبات',fr:'Boissons',en:'Beverages'},
+  {ar:'وجبات خفيفة',fr:'Snacks',en:'Snacks'},
+  {ar:'عناية شخصية',fr:'Hygiène',en:'Personal care'},
+  {ar:'أخرى',fr:'Autres',en:'Other'}
+];
+
+var products=[
+  {id:1,nameAr:'حليب طازج',nameFr:'Lait frais',nameEn:'Fresh milk',code:'6001234567890',price:150,qty:50,disc:0,cat:0},
+  {id:2,nameAr:'خبز أبيض',nameFr:'Pain blanc',nameEn:'White bread',code:'6001234567891',price:50,qty:100,disc:0,cat:1},
+  {id:3,nameAr:'عصير برتقال',nameFr:"Jus d'orange",nameEn:'Orange juice',code:'6001234567892',price:200,qty:30,disc:10,cat:2},
+  {id:4,nameAr:'شوكولاتة',nameFr:'Chocolat',nameEn:'Chocolate',code:'6001234567893',price:120,qty:45,disc:0,cat:3},
+  {id:5,nameAr:'صابون يد',nameFr:'Savon main',nameEn:'Hand soap',code:'6001234567894',price:180,qty:25,disc:15,cat:4},
+  {id:6,nameAr:'أرز بسمتي',nameFr:'Riz basmati',nameEn:'Basmati rice',code:'6001234567895',price:350,qty:40,disc:5,cat:1}
+];
+var cart=[],isAdmin=false,transactions=0,revenue=0,nextId=7,currentLang='ar';
+var cashPaidStr='',cashDueAmount=0;
+
+// ============ TRANSLATIONS ============
+var T={
+  ar:{dir:'rtl',label:'العربية',brandSub:'تسوق ذكي',adminBtn:'⚙️ الإدارة',
+    rm:'🎁 اشتري 2 واحصل على الثالث مجاناً &nbsp;|&nbsp; ⚡ عروض محدودة الوقت! &nbsp;|&nbsp; 🛍️ المنتجات المختارة &nbsp;&nbsp;&nbsp;&nbsp; 🎁 اشتري 2 واحصل على الثالث مجاناً &nbsp;|&nbsp; ⚡ عروض محدودة الوقت! &nbsp;|&nbsp; 🛍️ المنتجات المختارة &nbsp;&nbsp;&nbsp;&nbsp;',
+    gm1:'🏆 اشتر أكثر للحصول على نقاط إضافية',gm2:'💛 أكمل مجموعتك واحصل على خصم خاص',gm3:'⭐ نقاط الولاء:',
+    cartTitle:'🛒 السلة الذكية',cartEmpty:'السلة فارغة',cartEmptyHint:'أضف منتجات للبدء',
+    subtotalLbl:'المجموع الفرعي:',discountsLbl:'الخصومات:',totalLbl:'الإجمالي:',
+    pay1:'بنكي',pay2:'البطاقة',pay3:'نقداً',bigLbl:'المجموع الإجمالي',
+    addProd:'إضافة منتج +',scanLbl1:'مسح QR Code',scanBtn1:'مسح QR',
+    scanLbl2:'مسح Barcode',scanBtn2:'فتح الماسح',scanLbl3:'إدخال يدوي (باركود)',barcodePH:'أدخل الباركود',addBtn:'إضافة',
+    backBtn:'العودة للواجهة الرئيسية',adminTitle:'⚙️ لوحة الإدارة',
+    tabProducts:'🏷️ المنتجات',tabStats:'📊 الإحصائيات',tabStock:'📦 المخزون',tabSettings:'🔧 الإعدادات',
+    addNew:'+ إضافة منتج جديد',namesSection:'🌍 أسماء المنتج بعدة لغات',detailsSection:'📋 تفاصيل المنتج',
+    lblNameAr:'🇩🇿 الاسم بالعربية *',lblNameFr:'🇫🇷 Nom en Français',lblNameEn:'🇬🇧 Name in English',
+    lblCode:'الباركود *',lblPrice:'السعر (دج) *',lblQty:'الكمية',lblDisc:'الخصم (%)',lblCat:'التصنيف',
+    addProdBtn:'+ إضافة المنتج',manageProds:'إدارة المنتجات',
+    transactions:'إجمالي المعاملات',revenue:'الإيرادات (دج)',productsCount:'عدد المنتجات',
+    chartPH:'📊 الرسوم البيانية ستظهر هنا',
+    settingsTitle:'إعدادات النظام',lblStoreName:'اسم المتجر',lblCurrency:'العملة',lblAdminCode:'رمز الإدارة',saveBtn:'💾 حفظ الإعدادات',
+    modalTitle:'🔐 دخول الإدارة',modalLbl:'رمز الدخول',cancelBtn:'إلغاء',enterBtn:'دخول',passErr:'❌ رمز خاطئ، حاول مجدداً',
+    editTitle:'✏️ تعديل المنتج',editNamesLbl:'🌍 أسماء المنتج',editLblAr:'🇩🇿 العربية *',editLblFr:'🇫🇷 Français',editLblEn:'🇬🇧 English',
+    editLblCode:'الباركود',editLblPrice:'السعر (دج)',editLblQty:'الكمية',editLblDisc:'الخصم (%)',editLblCat:'التصنيف',
+    editCancel:'إلغاء',editSave:'💾 حفظ التعديلات',
+    cashTitle:'💵 الدفع النقدي',totalDue:'المبلغ المطلوب',amountPaid:'المبلغ المدفوع',change:'الباقي',
+    cashCancel:'إلغاء',cashConfirm:'✅ تأكيد الدفع',insufficientFunds:'⚠️ المبلغ غير كافٍ',
+    invoiceTitle:'فاتورة شراء',invoiceClose:'إغلاق',invoicePrint:'🖨️ طباعة الفاتورة',
+    invoiceItems:'المنتجات',invoiceSubtotal:'المجموع الفرعي',invoiceDiscount:'الخصم',invoiceTotal:'الإجمالي',
+    invoicePayMethod:'طريقة الدفع',invoicePaid:'المدفوع',invoiceChange:'الباقي',invoiceThank:'شكراً لتسوقك معنا!',
+    payMethods:{bank:'بنكي',card:'بطاقة',cash:'نقداً'},
+    priceLbl:'السعر:',qtyLbl:'الكمية:',discLbl:'الخصم:',catLbl:'التصنيف:',unit:'وح',noProducts:'لا توجد منتجات بعد',
+    toastAdded:'✅ تم إضافة:',toastProdAdded:'✅ تم إضافة:',toastDeleted:'🗑️ تم حذف:',toastEdited:'✅ تم تعديل:',
+    toastNotFound:'❌ المنتج غير موجود',toastEmpty:'⚠️ السلة فارغة!',toastNoStock:'⚠️ المنتج غير متوفر',
+    toastRequired:'⚠️ يرجى ملء الحقول المطلوبة (*)',toastDupCode:'⚠️ هذا الباركود موجود مسبقاً',
+    toastEnterCode:'⚠️ أدخل الباركود أولاً',toastNoProds:'⚠️ لا توجد منتجات',toastPaid:'✅ تم الدفع — شكراً! 🎉',
+    toastLang:'🌐 تم تغيير اللغة إلى العربية',
+    voiceListening:'🎤 أنا أستمع...',voiceNotSupported:'⚠️ المتصفح لا يدعم التعرف الصوتي',
+    nameKey:'nameAr'
+  },
+  fr:{dir:'ltr',label:'Français',brandSub:'Shopping Intelligent',adminBtn:'⚙️ Administration',
+    rm:"🎁 Achetez 2, obtenez le 3ème gratuit &nbsp;|&nbsp; ⚡ Offres limitées! &nbsp;|&nbsp; 🛍️ Produits sélectionnés &nbsp;&nbsp;&nbsp;&nbsp; 🎁 Achetez 2, obtenez le 3ème gratuit &nbsp;|&nbsp; ⚡ Offres limitées! &nbsp;|&nbsp; 🛍️ Produits sélectionnés &nbsp;&nbsp;&nbsp;&nbsp;",
+    gm1:'🏆 Achetez plus pour gagner des points',gm2:'💛 Complétez votre collection pour une remise',gm3:'⭐ Points fidélité:',
+    cartTitle:'🛒 Panier Intelligent',cartEmpty:'Panier vide',cartEmptyHint:'Ajoutez des produits',
+    subtotalLbl:'Sous-total:',discountsLbl:'Remises:',totalLbl:'Total:',
+    pay1:'Virement',pay2:'Carte',pay3:'Espèces',bigLbl:'Total Général',
+    addProd:'Ajouter un produit +',scanLbl1:'Scanner QR Code',scanBtn1:'Scanner QR',
+    scanLbl2:'Scanner Code-barres',scanBtn2:'Ouvrir Scanner',scanLbl3:'Saisie manuelle',barcodePH:'Code-barres',addBtn:'Ajouter',
+    backBtn:"Retour à l'interface",adminTitle:'⚙️ Tableau de bord',
+    tabProducts:'🏷️ Produits',tabStats:'📊 Statistiques',tabStock:'📦 Stock',tabSettings:'🔧 Paramètres',
+    addNew:'+ Ajouter un produit',namesSection:'🌍 Noms en plusieurs langues',detailsSection:'📋 Détails du produit',
+    lblNameAr:'🇩🇿 Nom en Arabe *',lblNameFr:'🇫🇷 Nom en Français',lblNameEn:'🇬🇧 Name in English',
+    lblCode:'Code-barres *',lblPrice:'Prix (DZD) *',lblQty:'Quantité',lblDisc:'Remise (%)',lblCat:'Catégorie',
+    addProdBtn:'+ Ajouter',manageProds:'Gestion des produits',
+    transactions:'Transactions',revenue:'Revenus (DZD)',productsCount:'Produits',
+    chartPH:"📊 Les graphiques s'afficheront ici",
+    settingsTitle:'Paramètres',lblStoreName:'Nom du magasin',lblCurrency:'Devise',lblAdminCode:'Code admin',saveBtn:'💾 Enregistrer',
+    modalTitle:'🔐 Accès Admin',modalLbl:"Code d'accès",cancelBtn:'Annuler',enterBtn:'Entrer',passErr:'❌ Code incorrect',
+    editTitle:'✏️ Modifier le produit',editNamesLbl:'🌍 Noms du produit',editLblAr:'🇩🇿 Arabe *',editLblFr:'🇫🇷 Français',editLblEn:'🇬🇧 English',
+    editLblCode:'Code-barres',editLblPrice:'Prix (DZD)',editLblQty:'Quantité',editLblDisc:'Remise (%)',editLblCat:'Catégorie',
+    editCancel:'Annuler',editSave:'💾 Enregistrer',
+    cashTitle:'💵 Paiement en espèces',totalDue:'Montant dû',amountPaid:'Montant payé',change:'Monnaie rendue',
+    cashCancel:'Annuler',cashConfirm:'✅ Confirmer',insufficientFunds:'⚠️ Montant insuffisant',
+    invoiceTitle:'Ticket de caisse',invoiceClose:'Fermer',invoicePrint:'🖨️ Imprimer',
+    invoiceItems:'Articles',invoiceSubtotal:'Sous-total',invoiceDiscount:'Remise',invoiceTotal:'Total',
+    invoicePayMethod:'Mode de paiement',invoicePaid:'Payé',invoiceChange:'Rendu',invoiceThank:'Merci pour votre achat!',
+    payMethods:{bank:'Virement',card:'Carte',cash:'Espèces'},
+    priceLbl:'Prix:',qtyLbl:'Qté:',discLbl:'Remise:',catLbl:'Catégorie:',unit:'u',noProducts:'Aucun produit',
+    toastAdded:'✅ Ajouté:',toastProdAdded:'✅ Produit ajouté:',toastDeleted:'🗑️ Supprimé:',toastEdited:'✅ Modifié:',
+    toastNotFound:'❌ Produit introuvable',toastEmpty:'⚠️ Panier vide!',toastNoStock:'⚠️ Rupture de stock',
+    toastRequired:'⚠️ Remplissez les champs obligatoires (*)',toastDupCode:'⚠️ Code-barres existant',
+    toastEnterCode:'⚠️ Entrez le code-barres',toastNoProds:'⚠️ Aucun produit',toastPaid:'✅ Paiement effectué — Merci! 🎉',
+    toastLang:'🌐 Langue changée en Français',
+    voiceListening:'🎤 J\'écoute...',voiceNotSupported:'⚠️ Navigateur non compatible',
+    nameKey:'nameFr'
+  },
+  en:{dir:'ltr',label:'English',brandSub:'Smart Shopping',adminBtn:'⚙️ Admin',
+    rm:'🎁 Buy 2 get 1 free &nbsp;|&nbsp; ⚡ Limited time offers! &nbsp;|&nbsp; 🛍️ Selected products &nbsp;&nbsp;&nbsp;&nbsp; 🎁 Buy 2 get 1 free &nbsp;|&nbsp; ⚡ Limited time offers! &nbsp;|&nbsp; 🛍️ Selected products &nbsp;&nbsp;&nbsp;&nbsp;',
+    gm1:'🏆 Buy more to earn extra loyalty points',gm2:'💛 Complete your collection for a special discount',gm3:'⭐ Loyalty points:',
+    cartTitle:'🛒 Smart Cart',cartEmpty:'Cart is empty',cartEmptyHint:'Add products to start',
+    subtotalLbl:'Subtotal:',discountsLbl:'Discounts:',totalLbl:'Total:',
+    pay1:'Bank',pay2:'Card',pay3:'Cash',bigLbl:'Grand Total',
+    addProd:'Add product +',scanLbl1:'Scan QR Code',scanBtn1:'Scan QR',
+    scanLbl2:'Scan Barcode',scanBtn2:'Open Scanner',scanLbl3:'Manual entry (barcode)',barcodePH:'Enter barcode',addBtn:'Add',
+    backBtn:'Back to main interface',adminTitle:'⚙️ Admin Dashboard',
+    tabProducts:'🏷️ Products',tabStats:'📊 Statistics',tabStock:'📦 Stock',tabSettings:'🔧 Settings',
+    addNew:'+ Add new product',namesSection:'🌍 Product names in multiple languages',detailsSection:'📋 Product details',
+    lblNameAr:'🇩🇿 Arabic name *',lblNameFr:'🇫🇷 French name',lblNameEn:'🇬🇧 English name',
+    lblCode:'Barcode *',lblPrice:'Price (DZD) *',lblQty:'Quantity',lblDisc:'Discount (%)',lblCat:'Category',
+    addProdBtn:'+ Add product',manageProds:'Manage products',
+    transactions:'Total transactions',revenue:'Revenue (DZD)',productsCount:'Products',
+    chartPH:'📊 Charts will appear here',
+    settingsTitle:'System settings',lblStoreName:'Store name',lblCurrency:'Currency',lblAdminCode:'Admin code',saveBtn:'💾 Save settings',
+    modalTitle:'🔐 Admin Access',modalLbl:'Access code',cancelBtn:'Cancel',enterBtn:'Enter',passErr:'❌ Wrong code, try again',
+    editTitle:'✏️ Edit product',editNamesLbl:'🌍 Product names',editLblAr:'🇩🇿 Arabic *',editLblFr:'🇫🇷 French',editLblEn:'🇬🇧 English',
+    editLblCode:'Barcode',editLblPrice:'Price (DZD)',editLblQty:'Quantity',editLblDisc:'Discount (%)',editLblCat:'Category',
+    editCancel:'Cancel',editSave:'💾 Save changes',
+    cashTitle:'💵 Cash Payment',totalDue:'Amount due',amountPaid:'Amount paid',change:'Change',
+    cashCancel:'Cancel',cashConfirm:'✅ Confirm payment',insufficientFunds:'⚠️ Insufficient amount',
+    invoiceTitle:'Receipt',invoiceClose:'Close',invoicePrint:'🖨️ Print Receipt',
+    invoiceItems:'Items',invoiceSubtotal:'Subtotal',invoiceDiscount:'Discount',invoiceTotal:'Total',
+    invoicePayMethod:'Payment method',invoicePaid:'Paid',invoiceChange:'Change',invoiceThank:'Thank you for shopping with us!',
+    payMethods:{bank:'Bank transfer',card:'Card',cash:'Cash'},
+    priceLbl:'Price:',qtyLbl:'Qty:',discLbl:'Discount:',catLbl:'Category:',unit:'u',noProducts:'No products yet',
+    toastAdded:'✅ Added:',toastProdAdded:'✅ Product added:',toastDeleted:'🗑️ Deleted:',toastEdited:'✅ Edited:',
+    toastNotFound:'❌ Product not found',toastEmpty:'⚠️ Cart is empty!',toastNoStock:'⚠️ Out of stock',
+    toastRequired:'⚠️ Please fill required fields (*)',toastDupCode:'⚠️ Barcode already exists',
+    toastEnterCode:'⚠️ Enter barcode first',toastNoProds:'⚠️ No products in database',toastPaid:'✅ Payment done — Thank you! 🎉',
+    toastLang:'🌐 Language changed to English',
+    voiceListening:'🎤 Listening...',voiceNotSupported:'⚠️ Browser not supported',
+    nameKey:'nameEn'
+  }
+};
+
+// ============ HELPERS ============
+function getPName(p){var k=T[currentLang].nameKey;return(p[k]&&p[k].trim()!=='')?p[k]:p.nameAr;}
+function getCat(idx){var c=CATS[idx]||CATS[5];return currentLang==='fr'?c.fr:currentLang==='en'?c.en:c.ar;}
+
+// ============ CLOCK ============
+function updateClock(){var n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');}
+setInterval(updateClock,1000);updateClock();
+
+// ============ TOAST ============
+function showToast(msg,color){var t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'#2e7d32';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
+
+// ============ MODAL ============
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+
+// ============ MARQUEES ============
+function updateMarquees(){
+  var t=T[currentLang];
+  document.getElementById('red-marquee').innerHTML=t.rm;
+  var pts=document.getElementById('loyalty-pts-val')||0;
+  var ptsVal=pts?pts.textContent:'0';
+  var g=t.gm1+' &nbsp;|&nbsp; '+t.gm2+' &nbsp;|&nbsp; '+t.gm3+' <span class="gv">'+ptsVal+'</span> &nbsp;&nbsp;&nbsp;&nbsp; '+t.gm1+' &nbsp;|&nbsp; '+t.gm2+' &nbsp;|&nbsp; '+t.gm3+' <span class="gv">'+ptsVal+'</span> &nbsp;&nbsp;&nbsp;&nbsp;';
+  document.getElementById('green-marquee').innerHTML=g;
+}
+
+// ============ LANG ============
+function toggleLang(){var m=document.getElementById('lang-menu');m.style.display=(m.style.display==='block')?'none':'block';}
+document.addEventListener('click',function(e){if(!e.target.closest('.lang-dropdown'))document.getElementById('lang-menu').style.display='none';});
+
+function setLang(lang){
+  currentLang=lang;var t=T[lang];
+  document.getElementById('lang-menu').style.display='none';
+  document.documentElement.dir=t.dir;document.documentElement.lang=lang;
+  document.getElementById('lang-label').textContent=t.label;
+  updateMarquees();
+  document.getElementById('brand-sub').textContent=t.brandSub;
+  document.getElementById('btn-admin-text').textContent=t.adminBtn;
+  document.getElementById('txt-cart-title').textContent=t.cartTitle;
+  document.getElementById('txt-empty').textContent=t.cartEmpty;
+  document.getElementById('txt-empty-hint').textContent=t.cartEmptyHint;
+  document.getElementById('txt-subtotal-lbl').textContent=t.subtotalLbl;
+  document.getElementById('txt-discounts-lbl').textContent=t.discountsLbl;
+  document.getElementById('txt-total-lbl').textContent=t.totalLbl;
+  document.getElementById('txt-pay1').textContent=t.pay1;
+  document.getElementById('txt-pay2').textContent=t.pay2;
+  document.getElementById('txt-pay3').textContent=t.pay3;
+  document.getElementById('txt-big-lbl').textContent=t.bigLbl;
+  document.getElementById('txt-add-prod').textContent=t.addProd;
+  document.getElementById('txt-scan-lbl1').textContent=t.scanLbl1;
+  document.getElementById('txt-scan-btn1').textContent=t.scanBtn1;
+  document.getElementById('txt-scan-lbl2').textContent=t.scanLbl2;
+  document.getElementById('txt-scan-btn2').textContent=t.scanBtn2;
+  document.getElementById('txt-scan-lbl3').textContent=t.scanLbl3;
+  document.getElementById('barcode-input').placeholder=t.barcodePH;
+  document.getElementById('txt-add-btn').textContent=t.addBtn;
+  document.getElementById('txt-back-btn').textContent=t.backBtn;
+  document.getElementById('txt-admin-title').textContent=t.adminTitle;
+  document.getElementById('tab-products-btn').textContent=t.tabProducts;
+  document.getElementById('tab-stats-btn').textContent=t.tabStats;
+  document.getElementById('tab-stock-btn').textContent=t.tabStock;
+  document.getElementById('tab-settings-btn').textContent=t.tabSettings;
+  document.getElementById('txt-add-new').textContent=t.addNew;
+  document.getElementById('lbl-names-section').textContent=t.namesSection;
+  document.getElementById('lbl-details-section').textContent=t.detailsSection;
+  document.getElementById('lbl-name-ar').textContent=t.lblNameAr;
+  document.getElementById('lbl-name-fr').textContent=t.lblNameFr;
+  document.getElementById('lbl-name-en').textContent=t.lblNameEn;
+  document.getElementById('lbl-code').textContent=t.lblCode;
+  document.getElementById('lbl-price').textContent=t.lblPrice;
+  document.getElementById('lbl-qty').textContent=t.lblQty;
+  document.getElementById('lbl-disc').textContent=t.lblDisc;
+  document.getElementById('lbl-cat').textContent=t.lblCat;
+  document.getElementById('txt-add-prod-btn').textContent=t.addProdBtn;
+  document.getElementById('txt-manage-prods').textContent=t.manageProds;
+  document.getElementById('txt-transactions').textContent=t.transactions;
+  document.getElementById('txt-revenue').textContent=t.revenue;
+  document.getElementById('txt-products-count').textContent=t.productsCount;
+  document.getElementById('txt-chart-ph').textContent=t.chartPH;
+  document.getElementById('txt-settings-title').textContent=t.settingsTitle;
+  document.getElementById('lbl-store-name').textContent=t.lblStoreName;
+  document.getElementById('lbl-currency').textContent=t.lblCurrency;
+  document.getElementById('lbl-admin-code').textContent=t.lblAdminCode;
+  document.getElementById('txt-save-btn').textContent=t.saveBtn;
+  document.getElementById('txt-modal-title').textContent=t.modalTitle;
+  document.getElementById('txt-modal-lbl').textContent=t.modalLbl;
+  document.getElementById('txt-cancel').textContent=t.cancelBtn;
+  document.getElementById('txt-enter').textContent=t.enterBtn;
+  document.getElementById('txt-edit-title').textContent=t.editTitle;
+  document.getElementById('txt-edit-names-lbl').textContent=t.editNamesLbl;
+  document.getElementById('edit-lbl-ar').textContent=t.editLblAr;
+  document.getElementById('edit-lbl-fr').textContent=t.editLblFr;
+  document.getElementById('edit-lbl-en').textContent=t.editLblEn;
+  document.getElementById('edit-lbl-code').textContent=t.editLblCode;
+  document.getElementById('edit-lbl-price').textContent=t.editLblPrice;
+  document.getElementById('edit-lbl-qty').textContent=t.editLblQty;
+  document.getElementById('edit-lbl-disc').textContent=t.editLblDisc;
+  document.getElementById('edit-lbl-cat').textContent=t.editLblCat;
+  document.getElementById('txt-edit-cancel').textContent=t.editCancel;
+  document.getElementById('txt-edit-save').textContent=t.editSave;
+  document.getElementById('txt-cash-title').textContent=t.cashTitle;
+  document.getElementById('txt-total-due').textContent=t.totalDue;
+  document.getElementById('txt-amount-paid').textContent=t.amountPaid;
+  document.getElementById('txt-change').textContent=t.change;
+  document.getElementById('txt-cash-cancel').textContent=t.cashCancel;
+  document.getElementById('cash-confirm-btn').textContent=t.cashConfirm;
+  document.getElementById('txt-invoice-close').textContent=t.invoiceClose;
+  document.getElementById('txt-invoice-print').textContent=t.invoicePrint;
+  document.getElementById('voice-status').textContent=t.voiceListening;
+  renderAdminProducts();renderCart();
+  showToast(t.toastLang);
+}
+
+// ============ ADMIN ============
+function toggleAdmin(){
+  if(isAdmin){doShowAdmin();}
+  else{document.getElementById('admin-pass').value='';document.getElementById('pass-err').style.display='none';document.getElementById('login-modal').classList.add('active');setTimeout(function(){document.getElementById('admin-pass').focus();},100);}
+}
+function checkAdmin(){
+  if(document.getElementById('admin-pass').value==='admin'){isAdmin=true;closeModal('login-modal');doShowAdmin();}
+  else{document.getElementById('pass-err').textContent=T[currentLang].passErr;document.getElementById('pass-err').style.display='block';document.getElementById('admin-pass').value='';}
+}
+function doShowAdmin(){
+  document.getElementById('customer-view').style.display='none';
+  document.getElementById('admin-panel').style.display='block';
+  renderAdminProducts();
+  document.getElementById('s-transactions').textContent=transactions;
+  document.getElementById('s-revenue').textContent=revenue;
+  document.getElementById('s-products').textContent=products.length;
+}
+function backToMain(){document.getElementById('customer-view').style.display='block';document.getElementById('admin-panel').style.display='none';}
+function showTab(name,btn){
+  ['products','stats','stock','settings'].forEach(function(t){var el=document.getElementById('tab-'+t);if(el)el.style.display='none';});
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  if(name==='stock')renderStock();
+}
+
+// ============ PRODUCTS ============
+function renderAdminProducts(){
+  var t=T[currentLang];var g=document.getElementById('admin-prod-grid');if(!g)return;
+  if(products.length===0){g.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;grid-column:1/-1;">'+t.noProducts+'</div>';return;}
+  g.innerHTML=products.map(function(p){
+    var name=getPName(p);
+    var sub=currentLang==='ar'?(p.nameFr||''):(currentLang==='fr'?(p.nameAr||''):(p.nameAr||''));
+    return '<div class="prod-card">'+
+      '<div class="prod-name">'+name+'</div>'+(sub&&sub!==name?'<div class="prod-name-sub">'+sub+'</div>':'')+
+      '<div class="prod-code">'+p.code+'</div>'+
+      '<div class="prod-row"><span class="k">'+t.priceLbl+'</span><span class="v gold">'+p.price+' دج</span></div>'+
+      '<div class="prod-row"><span class="k">'+t.qtyLbl+'</span><span class="v">'+p.qty+'</span></div>'+
+      (p.disc?'<div class="prod-row"><span class="k">'+t.discLbl+'</span><span class="v green">%'+p.disc+'</span></div>':'')+
+      '<div class="prod-row"><span class="k">'+t.catLbl+'</span><span class="v">'+getCat(p.cat)+'</span></div>'+
+      '<div class="prod-actions"><button class="prod-del" onclick="deleteProduct('+p.id+')">🗑️</button><button class="prod-edit" onclick="openEditModal('+p.id+')">✏️</button></div></div>';
+  }).join('');
+}
+
+function addProduct(){
+  var t=T[currentLang];
+  var nameAr=document.getElementById('np-name-ar').value.trim();
+  var nameFr=document.getElementById('np-name-fr').value.trim();
+  var nameEn=document.getElementById('np-name-en').value.trim();
+  var code=document.getElementById('np-code').value.trim();
+  var price=parseFloat(document.getElementById('np-price').value)||0;
+  var qty=parseInt(document.getElementById('np-qty').value)||0;
+  var disc=parseFloat(document.getElementById('np-disc').value)||0;
+  var cat=parseInt(document.getElementById('np-cat').value)||0;
+  if(!nameAr||!code||!price){showToast(t.toastRequired,'#e74c3c');return;}
+  if(products.find(function(p){return p.code===code;})){showToast(t.toastDupCode,'#e74c3c');return;}
+  products.push({id:nextId++,nameAr:nameAr,nameFr:nameFr||nameAr,nameEn:nameEn||nameAr,code:code,price:price,qty:qty,disc:disc,cat:cat});
+  ['np-name-ar','np-name-fr','np-name-en','np-code','np-price','np-qty','np-disc'].forEach(function(id){document.getElementById(id).value='';});
+  renderAdminProducts();document.getElementById('s-products').textContent=products.length;
+  showToast(t.toastProdAdded+' '+nameAr);
+}
+
+function deleteProduct(id){
+  var t=T[currentLang];var p=products.find(function(x){return x.id===id;});
+  products=products.filter(function(x){return x.id!==id;});
+  renderAdminProducts();document.getElementById('s-products').textContent=products.length;
+  showToast(t.toastDeleted+' '+(p?getPName(p):''),'#e74c3c');
+}
+
+function openEditModal(id){
+  var p=products.find(function(x){return x.id===id;});if(!p)return;
+  document.getElementById('edit-id').value=p.id;
+  document.getElementById('edit-name-ar').value=p.nameAr||'';
+  document.getElementById('edit-name-fr').value=p.nameFr||'';
+  document.getElementById('edit-name-en').value=p.nameEn||'';
+  document.getElementById('edit-code').value=p.code;
+  document.getElementById('edit-price').value=p.price;
+  document.getElementById('edit-qty').value=p.qty;
+  document.getElementById('edit-disc').value=p.disc;
+  document.getElementById('edit-cat').value=p.cat;
+  document.getElementById('edit-modal').classList.add('active');
+}
+
+function saveEdit(){
+  var t=T[currentLang];var id=parseInt(document.getElementById('edit-id').value);
+  var p=products.find(function(x){return x.id===id;});if(!p)return;
+  var nameAr=document.getElementById('edit-name-ar').value.trim();
+  var nameFr=document.getElementById('edit-name-fr').value.trim();
+  var nameEn=document.getElementById('edit-name-en').value.trim();
+  var code=document.getElementById('edit-code').value.trim();
+  var price=parseFloat(document.getElementById('edit-price').value)||0;
+  if(!nameAr||!code||!price){showToast(t.toastRequired,'#e74c3c');return;}
+  var dup=products.find(function(x){return x.code===code&&x.id!==id;});
+  if(dup){showToast(t.toastDupCode,'#e74c3c');return;}
+  p.nameAr=nameAr;p.nameFr=nameFr||nameAr;p.nameEn=nameEn||nameAr;
+  p.code=code;p.price=price;
+  p.qty=parseInt(document.getElementById('edit-qty').value)||0;
+  p.disc=parseFloat(document.getElementById('edit-disc').value)||0;
+  p.cat=parseInt(document.getElementById('edit-cat').value)||0;
+  closeModal('edit-modal');renderAdminProducts();
+  showToast(t.toastEdited+' '+getPName(p));
+}
+
+// ============ STOCK ============
+function renderStock(){
+  var t=T[currentLang];var s=document.getElementById('stock-list');
+  s.innerHTML='<div style="display:flex;flex-direction:column;gap:12px;">'+products.map(function(p){
+    var pct=Math.min(100,p.qty);var col=p.qty<20?'#e74c3c':p.qty<50?'#f5c518':'#2ecc40';
+    return '<div style="display:flex;align-items:center;gap:12px;">'+
+      '<div style="flex:1;text-align:right;font-size:13px;font-weight:700;">'+getPName(p)+'</div>'+
+      '<div style="flex:2;background:#111;border-radius:10px;height:10px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:10px;"></div></div>'+
+      '<div style="width:50px;text-align:left;font-size:13px;color:'+col+';font-weight:700;">'+p.qty+' '+t.unit+'</div></div>';
+  }).join('')+'</div>';
+}
+
+// ============ CART ============
+function addToCart(product){
+  var t=T[currentLang];
+  if(product.qty<=0){showToast(t.toastNoStock,'#e74c3c');return;}
+  var ex=cart.find(function(i){return i.id===product.id;});
+  if(ex){ex.qty++;}else{cart.push({id:product.id,disc:product.disc,qty:1});}
+  renderCart();showToast(t.toastAdded+' '+getPName(product));
+}
+
+function renderCart(){
+  var empty=document.getElementById('cart-empty');var items=document.getElementById('cart-items');
+  var count=cart.reduce(function(a,i){return a+i.qty;},0);
+  document.getElementById('cart-count').textContent=count;
+  if(cart.length===0){empty.style.display='flex';items.style.display='none';}
+  else{
+    empty.style.display='none';items.style.display='flex';
+    items.innerHTML=cart.map(function(item){
+      var p=products.find(function(x){return x.id===item.id;});
+      var name=p?getPName(p):'?';var fp=Math.round((p?p.price:0)*(1-item.disc/100)*item.qty);
+      return '<div class="cart-item"><button class="remove-btn" onclick="removeItem('+item.id+')">✕</button><span class="item-qty">×'+item.qty+'</span><span class="item-name">'+name+'</span><span class="item-price">'+fp+' دج</span></div>';
+    }).join('');
+  }
+  updateTotals();
+}
+
+function removeItem(id){var i=cart.find(function(x){return x.id===id;});if(i&&i.qty>1){i.qty--;}else{cart=cart.filter(function(x){return x.id!==id;});}renderCart();}
+
+function updateTotals(){
+  var sub=cart.reduce(function(a,i){var p=products.find(function(x){return x.id===i.id;});return a+(p?p.price:0)*i.qty;},0);
+  var disc=cart.reduce(function(a,i){var p=products.find(function(x){return x.id===i.id;});return a+((p?p.price:0)*i.disc/100)*i.qty;},0);
+  var grand=sub-disc;
+  document.getElementById('subtotal').textContent=Math.round(sub)+' دج';
+  document.getElementById('discounts').textContent=Math.round(disc)+'- دج';
+  document.getElementById('grand-total').textContent=Math.round(grand)+' دج';
+  document.getElementById('big-total').textContent=Math.round(grand);
+  document.getElementById('progress').style.width=Math.min(100,Math.round(grand/10000*100))+'%';
+  updateMarquees();
+}
+
+function getGrandTotal(){return cart.reduce(function(a,i){var p=products.find(function(x){return x.id===i.id;});return a+Math.round((p?p.price:0)*(1-(i.disc||0)/100)*i.qty);},0);}
+function getSubTotal(){return cart.reduce(function(a,i){var p=products.find(function(x){return x.id===i.id;});return a+(p?p.price:0)*i.qty;},0);}
+function getDiscount(){return cart.reduce(function(a,i){var p=products.find(function(x){return x.id===i.id;});return a+((p?p.price:0)*i.disc/100)*i.qty;},0);}
+
+function simulateScan(){var t=T[currentLang];if(products.length===0){showToast(t.toastNoProds,'#e74c3c');return;}addToCart(products[Math.floor(Math.random()*products.length)]);}
+function addByCode(){var t=T[currentLang];var code=document.getElementById('barcode-input').value.trim();if(!code){showToast(t.toastEnterCode,'#e74c3c');return;}var p=products.find(function(x){return x.code===code;});if(p){addToCart(p);document.getElementById('barcode-input').value='';}else{showToast(t.toastNotFound,'#e74c3c');}}
+
+// ============ CHECKOUT ============
+function checkout(method){
+  var t=T[currentLang];
+  if(cart.length===0){showToast(t.toastEmpty,'#e74c3c');return;}
+  if(method==='cash'){
+    cashDueAmount=getGrandTotal();
+    document.getElementById('cash-due-display').textContent=cashDueAmount.toFixed(2);
+    document.getElementById('cash-paid-input').value='';
+    document.getElementById('cash-change-display').textContent='—';
+    document.getElementById('cash-change-box').style.background='#1a2632';
+    document.getElementById('cash-change-display').style.color='#aaa';
+    document.getElementById('cash-modal').classList.add('active');
+    setTimeout(function(){document.getElementById('cash-paid-input').focus();},150);
+  } else {
+    finalizePayment(method,0,0);
+  }
+}
+
+// ============ CASH KEYPAD ============
+function updateChange(){
+  var paid=parseFloat(document.getElementById('cash-paid-input').value)||0;
+  var change=paid-cashDueAmount;
+  var box=document.getElementById('cash-change-box');
+  if(change>=0){
+    document.getElementById('cash-change-display').textContent=change.toFixed(2);
+    box.style.background='#0d2a0d';
+    document.getElementById('cash-change-display').style.color='#2ecc40';
+  } else {
+    document.getElementById('cash-change-display').textContent=Math.abs(change).toFixed(2);
+    box.style.background='#2a0d0d';
+    document.getElementById('cash-change-display').style.color='#e74c3c';
+  }
+}
+function cashStep(delta){
+  var inp=document.getElementById('cash-paid-input');
+  var val=(parseFloat(inp.value)||0)+delta;
+  if(val<0)val=0;
+  inp.value=val;
+  updateChange();
+}
+function confirmCash(){
+  var t=T[currentLang];
+  var paid=parseFloat(document.getElementById('cash-paid-input').value)||0;
+  if(paid<cashDueAmount){showToast(t.insufficientFunds,'#e74c3c');return;}
+  var change=paid-cashDueAmount;
+  closeModal('cash-modal');
+  finalizePayment('cash',paid,change);
+}
+
+// ============ FINALIZE + INVOICE ============
+function finalizePayment(method,paid,change){
+  var t=T[currentLang];
+  var grand=getGrandTotal();var sub=getSubTotal();var disc=getDiscount();
+  transactions++;revenue+=grand;
+  var cartSnapshot=cart.map(function(i){
+    var p=products.find(function(x){return x.id===i.id;});
+    return {name:p?getPName(p):'?',qty:i.qty,unitPrice:p?p.price:0,disc:i.disc,total:Math.round((p?p.price:0)*(1-i.disc/100)*i.qty)};
+  });
+  cart=[];renderCart();
+  showInvoice(method,paid,change,grand,sub,disc,cartSnapshot);
+}
+
+function showInvoice(method,paid,change,grand,sub,disc,items){
+  var t=T[currentLang];
+  var isRtl=(currentLang==='ar');
+  var now=new Date();
+  var dateStr=now.toLocaleDateString();
+  var timeStr=now.toLocaleTimeString();
+  var invNum='INV-'+Math.floor(10000000+Math.random()*90000000);
+  var methodLabel=t.payMethods[method];
+  var cur=currentLang==='ar'?'دج':currentLang==='fr'?'DZD':'DZD';
+
+  // ─── Labels per language ───
+  var L={
+    storeName: 'Scan & Go 🛒',
+    title:   currentLang==='ar'?'وصل بيع':currentLang==='fr'?'Bon de caisse':'Receipt',
+    refLbl:  currentLang==='ar'?'رقم الوصل':currentLang==='fr'?'Réf':'Ref',
+    payLbl:  currentLang==='ar'?'طريقة الدفع':currentLang==='fr'?'Paiement':'Payment',
+    colProd: currentLang==='ar'?'المنتج':currentLang==='fr'?'Article':'Product',
+    colQty:  currentLang==='ar'?'الكمية':currentLang==='fr'?'Qté':'Qty',
+    colPrice:currentLang==='ar'?'السعر':currentLang==='fr'?'Prix':'Price',
+    colTotal:currentLang==='ar'?'الإجمالي':currentLang==='fr'?'Total':'Total',
+    subLbl:  currentLang==='ar'?'المجموع الفرعي':currentLang==='fr'?'Sous-total':'Subtotal',
+    discLbl: currentLang==='ar'?'الخصم':currentLang==='fr'?'Remise':'Discount',
+    grandLbl:currentLang==='ar'?'المبلغ الإجمالي':currentLang==='fr'?'Total TTC':'Grand Total',
+    paidLbl: currentLang==='ar'?'المبلغ المُسلَّم':currentLang==='fr'?'Reçu':'Received',
+    changeLbl:currentLang==='ar'?'الباقي للزبون':currentLang==='fr'?'Monnaie rendue':'Change',
+    qrLbl:   currentLang==='ar'?'📱 امسح للحصول على نسخة الفاتورة':currentLang==='fr'?'📱 Scannez pour votre reçu':'📱 Scan to get your receipt',
+    thanks:  currentLang==='ar'?'🙏 شكراً لزيارتكم':currentLang==='fr'?'🙏 Merci pour votre visite':'🙏 Thank you for visiting us'
+  };
+
+  var align=isRtl?'right':'left';
+  var alignOp=isRtl?'left':'right';
+
+  var rows=items.map(function(item){
+    return '<tr style="border-bottom:1px solid #eee;">'+
+      '<td style="padding:8px 4px;font-weight:600;text-align:'+align+';">'+item.name+'</td>'+
+      '<td style="padding:8px 4px;text-align:center;color:#555;">'+item.qty+'</td>'+
+      '<td style="padding:8px 4px;text-align:center;color:#555;">'+item.unitPrice.toFixed(2)+' '+cur+'</td>'+
+      '<td style="padding:8px 4px;text-align:'+alignOp+';font-weight:700;">'+item.total.toFixed(2)+' '+cur+'</td>'+
+      '</tr>';
+  }).join('');
+
+  var changeRow=method==='cash'
+    ?'<tr><td colspan="3" style="padding:6px 4px;text-align:'+align+';color:#555;">'+L.paidLbl+'</td><td style="padding:6px 4px;text-align:'+alignOp+';">'+paid.toFixed(2)+' '+cur+'</td></tr>'+
+     '<tr style="background:#e8f5e9;"><td colspan="3" style="padding:8px 4px;text-align:'+align+';font-weight:900;color:#1b5e20;">'+L.changeLbl+'</td><td style="padding:8px 4px;text-align:'+alignOp+';font-weight:900;color:#1b5e20;font-size:16px;">'+change.toFixed(2)+' '+cur+'</td></tr>'
+    :'';
+
+  var discRow=disc>0
+    ?'<tr><td colspan="3" style="padding:5px 4px;text-align:'+align+';color:#2e7d32;">'+L.discLbl+'</td><td style="padding:5px 4px;text-align:'+alignOp+';color:#2e7d32;">-'+Math.round(disc).toFixed(2)+' '+cur+'</td></tr>'
+    :'';
+
+  // ─── Encode invoice data in URL (works on any device) ───
+  var invoiceData={
+    n: invNum,
+    d: dateStr,
+    t: timeStr,
+    m: methodLabel,
+    it: items.map(function(i){return{nm:i.name,q:i.qty,tot:i.total};}),
+    s: Math.round(sub),
+    dc: Math.round(disc),
+    g: Math.round(grand),
+    pd: Math.round(paid),
+    ch: Math.round(change),
+    lg: currentLang
+  };
+  var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(invoiceData))));
+  var qrText='https://zahraberrouachedi-tech.github.io/miz-/?inv='+encoded;
+
+  var html=
+    '<div dir="'+(isRtl?'rtl':'ltr')+'" style="text-align:center;border-bottom:2px dashed #ddd;padding-bottom:16px;margin-bottom:16px;">'+
+      '<div style="font-size:22px;font-weight:900;letter-spacing:1px;">'+L.storeName+'</div>'+
+      '<div style="font-size:13px;color:#777;margin-top:4px;">'+L.title+'</div>'+
+    '</div>'+
+    '<div dir="'+(isRtl?'rtl':'ltr')+'" style="display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:4px;">'+
+      '<span>📅 '+dateStr+'</span><span>🕐 '+timeStr+'</span>'+
+    '</div>'+
+    '<div dir="'+(isRtl?'rtl':'ltr')+'" style="display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:14px;flex-wrap:wrap;gap:4px;">'+
+      '<span>'+L.refLbl+': <b>'+invNum+'</b></span>'+
+      '<span>'+L.payLbl+': <b>'+methodLabel+'</b></span>'+
+    '</div>'+
+    '<table dir="'+(isRtl?'rtl':'ltr')+'" style="width:100%;border-collapse:collapse;margin-bottom:14px;">'+
+      '<thead><tr style="background:#f5f5f5;border-bottom:2px solid #ddd;">'+
+        '<th style="padding:8px 4px;text-align:'+align+';font-size:12px;">'+L.colProd+'</th>'+
+        '<th style="padding:8px 4px;text-align:center;font-size:12px;">'+L.colQty+'</th>'+
+        '<th style="padding:8px 4px;text-align:center;font-size:12px;">'+L.colPrice+'</th>'+
+        '<th style="padding:8px 4px;text-align:'+alignOp+';font-size:12px;">'+L.colTotal+'</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>'+
+    '<table dir="'+(isRtl?'rtl':'ltr')+'" style="width:100%;border-collapse:collapse;">'+
+      '<tr><td colspan="3" style="padding:5px 4px;text-align:'+align+';color:#777;">'+L.subLbl+'</td><td style="padding:5px 4px;text-align:'+alignOp+';">'+Math.round(sub).toFixed(2)+' '+cur+'</td></tr>'+
+      discRow+
+      '<tr style="border-top:2px solid #111;"><td colspan="3" style="padding:10px 4px;text-align:'+align+';font-weight:900;font-size:16px;">'+L.grandLbl+'</td><td style="padding:10px 4px;text-align:'+alignOp+';font-weight:900;font-size:16px;">'+grand.toFixed(2)+' '+cur+'</td></tr>'+
+      changeRow+
+    '</table>'+
+    '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:2px dashed #ddd;">'+
+      '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;">'+L.qrLbl+'</div>'+
+      '<div id="invoice-qr-wrap" style="display:inline-block;padding:8px;background:#fff;border:3px solid #111;border-radius:10px;">'+
+      '</div>'+
+      '<div style="font-size:10px;color:#aaa;margin-top:6px;font-family:monospace;">'+invNum+'</div>'+
+    '</div>'
+    '<div dir="'+(isRtl?'rtl':'ltr')+'" style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px dashed #ddd;font-size:13px;color:#888;">'+
+      L.thanks+
+    '</div>';
+
+  document.getElementById('invoice-content').innerHTML=html;
+  document.getElementById('invoice-modal').classList.add('active');
+
+  // Generate real QR Code using QRCode.js — encodes the full invoice data
+  setTimeout(function(){
+    var wrap=document.getElementById('invoice-qr-wrap');
+    if(!wrap) return;
+    wrap.innerHTML='';
+    wrap.style.padding='8px';
+    wrap.style.background='#fff';
+    wrap.style.display='inline-block';
+    wrap.style.borderRadius='6px';
+    try {
+      new QRCode(wrap, {
+        text: qrText,
+        width: 180,
+        height: 180,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.L
+      });
+    } catch(e){
+      wrap.innerHTML='<div style="padding:12px;text-align:center;font-family:monospace;font-size:12px;color:#333;background:#fff;">'+invNum+'</div>';
+    }
+  }, 150);
+
+  showToast(t.toastPaid);
+}
+
+// ============ VOICE ASSISTANT ============
+var recognition=null;var isListening=false;
+function toggleVoice(){
+  var t=T[currentLang];
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){showToast(t.voiceNotSupported,'#e74c3c');return;}
+  if(isListening){stopVoice();return;}
+  var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SpeechRecognition();
+  recognition.lang=currentLang==='ar'?'ar-DZ':currentLang==='fr'?'fr-FR':'en-US';
+  recognition.continuous=false;recognition.interimResults=false;
+  recognition.onstart=function(){
+    isListening=true;
+    document.getElementById('voice-btn').className='btn-voice listening';
+    document.getElementById('voice-status').className='voice-status show';
+    document.getElementById('voice-status').textContent=t.voiceListening;
+  };
+  recognition.onresult=function(e){
+    var transcript=e.results[0][0].transcript.toLowerCase().trim();
+    handleVoiceCommand(transcript);
+  };
+  recognition.onend=function(){stopVoice();};
+  recognition.onerror=function(){stopVoice();};
+  recognition.start();
+}
+function stopVoice(){
+  isListening=false;
+  document.getElementById('voice-btn').className='btn-voice';
+  document.getElementById('voice-status').className='voice-status';
+  if(recognition){try{recognition.stop();}catch(e){}}
+}
+function handleVoiceCommand(cmd){
+  var found=false;
+  products.forEach(function(p){
+    var names=[p.nameAr.toLowerCase(),p.nameFr.toLowerCase(),p.nameEn.toLowerCase()];
+    names.forEach(function(n){if(cmd.indexOf(n)!==-1&&!found){found=true;addToCart(p);}});
+  });
+  if(!found){
+    if(cmd.indexOf('مسح')!==-1||cmd.indexOf('scan')!==-1||cmd.indexOf('scanner')!==-1){simulateScan();}
+    else if(cmd.indexOf('دفع')!==-1||cmd.indexOf('payer')!==-1||cmd.indexOf('pay')!==-1){checkout('card');}
+    else{showToast('🎤 "'+cmd+'"','#9b59b6');}
+  }
+}
+
+// ============ INIT ============
+updateMarquees();
+</script>
+</body>
+</html>
